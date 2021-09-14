@@ -1,0 +1,201 @@
+package featureSelection.tester.procedure.opt.artificialFishSwarm.component.common.fsaInitiate;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+
+import common.utils.LoggerUtil;
+import featureSelection.basic.model.universe.instance.Instance;
+import featureSelection.basic.procedure.ProcedureComponent;
+import featureSelection.basic.procedure.ProcedureContainer;
+import featureSelection.basic.procedure.component.TimeCountedProcedureComponent;
+import featureSelection.basic.procedure.container.DefaultProcedureContainer;
+import featureSelection.basic.procedure.parameter.ProcedureParameters;
+import featureSelection.basic.procedure.report.ReportMapGenerated;
+import featureSelection.basic.procedure.statistics.Statistics;
+import featureSelection.basic.procedure.statistics.StatisticsCalculated;
+import featureSelection.basic.procedure.timer.TimeCounted;
+import featureSelection.basic.procedure.timer.TimerUtils;
+import featureSelection.basic.support.calculation.FeatureImportance;
+import featureSelection.repository.algorithm.opt.artificialFishSwarm.func.ArtificialFishSwarm;
+import featureSelection.repository.entity.opt.artificialFishSwarm.GenerationRecord;
+import featureSelection.repository.entity.opt.artificialFishSwarm.ReductionParameters;
+import featureSelection.repository.entity.opt.artificialFishSwarm.interf.Position;
+import featureSelection.repository.entity.opt.artificialFishSwarm.interf.ReductionAlgorithm;
+import featureSelection.repository.entity.opt.artificialFishSwarm.interf.fitness.FitnessValue;
+import featureSelection.tester.procedure.ComponentTags;
+import featureSelection.tester.procedure.opt.artificialFishSwarm.component.roughEquivalenceClassBased.original.fsaInitiate.ArtificialFishSwarmInitiateProcedureContainer4REC;
+import featureSelection.tester.procedure.param.ParameterConstants;
+import featureSelection.tester.utils.ProcedureUtils;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+
+/**
+ * Initialization of <strong>Artificial Fish Swarm Algorithm</strong>. Procedure contains 1 
+ * {@link ProcedureComponent}s, referring to step:
+ * <ul>
+ *  <li>
+ *  	<strong>FSA basic initialization</strong>
+ *  	<p>Creating a {@link GenerationRecord} and calculating max fitness if needed.
+ *  </li>
+ * </ul>
+ * <p>
+ * In this {@link ProcedureContainer}(only!), the following parameters are used in
+ * {@link #getParameters()}:
+ * <ul>
+ * 	<li>[preset] {@link ParameterConstants#PARAMETER_UNIVERSE_INSTANCES}</li>
+ * 	<li>[preset] {@link ParameterConstants#PARAMETER_SIG_CALCULATION_CLASS}</li>
+ * 	<li>[preset] {@link ParameterConstants#PARAMETER_OPTIMIZATION_PARAMETERS}</li>
+ * </ul>
+ * 
+ * @see ArtificialFishSwarmInitiateProcedureContainer4REC
+ * 
+ * @author Benjamin_L
+ *
+ * @param <Cal>
+ * 		Type of implemented {@link FeatureImportance}.
+ * @param <Sig>
+ * 		Type of feature significance that implements {@link Number}.
+ * @param <CollectionItem>
+ * 		Universe or EquivalentClass.
+ * @param <FV>
+ * 		Type of fitness value.
+ * @param <Posi>
+ * 		Type of implemented {@link Position}.
+ */
+@Slf4j
+public class ArtificialFishSwarmInitiateProcedureContainer<Cal extends FeatureImportance<Sig>,
+															Sig extends Number, 
+															CollectionItem,
+															FV extends FitnessValue<? extends Number>,
+															Posi extends Position<?>>
+	extends DefaultProcedureContainer<Object[]>
+	implements StatisticsCalculated,
+				ReportMapGenerated<String, Map<String, Object>>
+{
+	private boolean logOn;
+	@Getter private Statistics statistics;
+	@Getter private Map<String, Map<String, Object>> report;
+	private Collection<String> reportKeys;
+
+	public ArtificialFishSwarmInitiateProcedureContainer(ProcedureParameters parameters, boolean logOn) {
+		super(logOn? log: null, parameters);
+		this.logOn = logOn;
+		statistics = new Statistics();
+		report = new HashMap<>();
+		reportKeys = new ArrayList<>(1);
+	}
+
+	@Override
+	public String shortName() {
+		return "initialization";
+	}
+	
+	@Override
+	public String staticsName() {
+		return shortName();
+	}
+
+	@Override
+	public String reportName() {
+		return shortName();
+	}
+	
+	@SuppressWarnings("unchecked")
+	@Override
+	public ProcedureComponent<?>[] initComponents() {
+		return new ProcedureComponent<?>[] {
+			// 1. FSA basic initialization.
+			new TimeCountedProcedureComponent<Object[]>(
+					ComponentTags.TAG_SIG,
+					this.getParameters(), 
+					(component) -> {
+						if (logOn)	log.info(LoggerUtil.spaceFormat(1, "1. "+component.getDescription()));
+						Collection<Instance> instances;
+						getParameters().setNonRoot(
+								ParameterConstants.PARAMETER_OPTIMIZATION_COLLECTION_ITEMS,
+								instances = getParameters().get(ParameterConstants.PARAMETER_UNIVERSE_INSTANCES)
+							);
+						component.setLocalParameters(new Object[] {
+								getParameters().get(ParameterConstants.PARAMETER_SIG_CALCULATION_CLASS),
+								getParameters().get(ParameterConstants.PARAMETER_OPTIMIZATION_PARAMETERS),
+								instances,
+								getParameters().get(ParameterConstants.PARAMETER_ATTRIBUTES),
+							});
+					}, 
+					false, (component, parameters) -> {
+						/* ------------------------------------------------------------------------------ */
+						int p=0;
+						Class<Cal> calculationClass =
+								(Class<Cal>) parameters[p++];
+						ReductionParameters params =
+								(ReductionParameters) parameters[p++];
+						Collection<CollectionItem> collectionList =
+								(Collection<CollectionItem>) parameters[p++];
+						int[] attributes =
+								(int[]) parameters[p++];
+						/* ------------------------------------------------------------------------------ */
+						TimerUtils.timeStart((TimeCounted) component);
+						/* ------------------------------------------------------------------------------ */
+						Cal calculation = calculationClass.newInstance();
+						ReductionAlgorithm<Cal, Sig, CollectionItem> redAlg = params.getReductionAlgorithm();
+						// Initiate generation record :
+						GenerationRecord<Posi, Sig> generRecord =
+								ArtificialFishSwarm.initGenerationRecord(
+									calculation,
+									collectionList,
+									params, 
+									attributes.length
+								);
+						return new Object[] {
+								calculation,
+								redAlg,
+								generRecord
+						};
+					}, 
+					(component, result) -> {
+						/* ------------------------------------------------------------------------------ */
+						int r=0;
+						Cal calculation = (Cal) result[r++];
+						ReductionAlgorithm<Cal, Sig, CollectionItem> redAlg = (ReductionAlgorithm<Cal, Sig, CollectionItem>) result[r++];
+						GenerationRecord<Posi, FV> geneRecord = (GenerationRecord<Posi, FV>) result[r++];
+						/* ------------------------------------------------------------------------------ */
+						getParameters().setNonRoot(ParameterConstants.PARAMETER_SIG_CALCULATION_INSTANCE, calculation);
+						getParameters().setNonRoot(ParameterConstants.PARAMETER_OPTIMIZATION_ALGORITHM, redAlg);
+						getParameters().setNonRoot(ParameterConstants.PARAMETER_OPTIMIZATION_GENERATION_RECORD, geneRecord);
+						int[] attributes = getParameters().get(ParameterConstants.PARAMETER_ATTRIBUTES);
+						getParameters().setNonRoot("positionLength", attributes.length);
+						/* ------------------------------------------------------------------------------ */
+						// Statistics
+						/* ------------------------------------------------------------------------------ */
+						// Report
+						//	[REPORT_EXECUTION_TIME]
+						ProcedureUtils.Report.ExecutionTime.save(report, (TimeCountedProcedureComponent<?>) component);
+						/* ------------------------------------------------------------------------------ */
+					}
+				){
+				@Override public void init() {}
+					
+				@Override public String staticsName() {
+					return shortName()+" | 1. of "+getComponents().size()+"."+" "+getDescription();
+				}
+			}.setDescription("FSA basic initialization"),
+		};
+	}
+
+	@Override
+	public Object[] exec() throws Exception {
+		ProcedureComponent<?>[] componentArray = initComponents();
+		for (ProcedureComponent<?> each : componentArray) {
+			this.getComponents().add(each);
+			reportKeys.add(each.getDescription());
+		}
+		return (Object[]) componentArray[0].exec();
+	}
+
+	@Override
+	public String[] getReportMapKeyOrder() {
+		return reportKeys.toArray(new String[reportKeys.size()]);
+	}
+}

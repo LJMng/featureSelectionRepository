@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="true" scanPeriod="60 seconds" debug="false">
+	<property name="LOG_HOME" value="./logs"></property>
+	<property name="COM_HOME" value="${LOG_HOME}/Compressed"></property>
+	
+	<property name="INFO_FILE" value="${LOG_HOME}/infos"></property>
+	<property name="WARN_FILE" value="${LOG_HOME}/warns"></property>
+	<property name="ERROR_FILE" value="${LOG_HOME}/errors"></property>
+	<property name="DEBUG_FILE" value="${LOG_HOME}/debugs"></property>
+		
+	<property name="COM_HOME" value="${LOG_HOME}/Compressed"></property>
+	
+	<!-- 普通日志格式 -->
+	<property name="CLASSIC_LOG_PATTERN_MSG_ONLY" value="%msg%n"></property>
+	<property name="CLASSIC_LOG_PATTERN_NO_TIME" value="[%thread] %-5level %logger{36} - %-3L - %msg%n"></property>
+	<property name="CLASSIC_LOG_PATTERN_TIME" value="%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %-3L - %msg%n"></property>
+	<property name="CLASSIC_LOG_PATTERN_DATETIME" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %-3L - %msg%n"></property>
+	
+	<contextName>logback</contextName>
+	
+	<!-- 命令行 appender -->
+	<appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder>
+			<charset>UTF-8</charset>
+			<pattern>%d{HH:mm:ss.SSS} [%thread] %-5level - %msg%n</pattern>
+		</encoder>
+	</appender>
+	<!-- Info appender -->
+	<appender name="infoFile" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<file>${INFO_FILE}</file>
+		<filter class="ch.qos.logback.classic.filter.LevelFilter">
+			<level>info</level>
+			<onMatch>ACCEPT</onMatch>
+			<onMismatch>DENY</onMismatch>
+		</filter>
+		<rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+			<fileNamePattern>${COM_HOME}/logback.%d{yyyy-MM-dd}.%i.info.log.gz</fileNamePattern>
+			<maxFileSize>10MB</maxFileSize>
+			<maxHistory>60</maxHistory>
+		</rollingPolicy>
+		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+			<pattern>${CLASSIC_LOG_PATTERN_DATETIME}</pattern>
+		</encoder>
+		<append>true</append>
+	</appender>
+	<!-- Warn appender -->
+	<appender name="warnFile" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<file>${WARN_FILE}</file>
+		<filter class="ch.qos.logback.classic.filter.LevelFilter">
+			<level>warn</level>
+			<onMatch>ACCEPT</onMatch>
+			<onMismatch>DENY</onMismatch>
+		</filter>
+		<rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+			<fileNamePattern>${COM_HOME}/logback.%d{yyyy-MM-dd}.%i.warn.log.gz</fileNamePattern>
+			<maxFileSize>10MB</maxFileSize>
+			<maxHistory>60</maxHistory>
+		</rollingPolicy>
+		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+			<pattern>${CLASSIC_LOG_PATTERN_MSG_ONLY}</pattern>
+		</encoder>
+		<append>true</append>
+	</appender>
+	<!-- Error appender -->
+	<appender name="errorFile" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<file>${ERROR_FILE}</file>
+		<filter class="ch.qos.logback.classic.filter.LevelFilter">
+			<level>error</level>
+			<onMatch>ACCEPT</onMatch>
+			<onMismatch>DENY</onMismatch>
+		</filter>
+		<rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+			<fileNamePattern>${COM_HOME}/logback.%d{yyyy-MM-dd}.%i.error.log.gz</fileNamePattern>
+			<maxFileSize>10MB</maxFileSize>
+			<maxHistory>60</maxHistory>
+		</rollingPolicy>
+		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+			<pattern>${CLASSIC_LOG_PATTERN_DATETIME}</pattern>
+		</encoder>
+		<append>true</append>
+	</appender>
+	<!-- Debug appender -->
+	<appender name="debugFile" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<file>${DEBUG_FILE}</file>
+		<filter class="ch.qos.logback.classic.filter.LevelFilter">
+			<level>debug</level>
+			<onMatch>ACCEPT</onMatch>
+			<onMismatch>DENY</onMismatch>
+		</filter>
+		<rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+			<fileNamePattern>${COM_HOME}/logback.%d{yyyy-MM-dd}.%i.debug.log.gz</fileNamePattern>
+			<maxFileSize>10MB</maxFileSize>
+			<maxHistory>60</maxHistory>
+		</rollingPolicy>
+		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+			<pattern>${CLASSIC_LOG_PATTERN_NO_TIME}</pattern>
+		</encoder>
+		<append>true</append>
+	</appender>
+		
+	<!--定义logger，只有定义了logger并引入的appender，appender才会生效-->
+	<root level="info">
+		<appender-ref ref="console"/>
+		<appender-ref ref="infoFile"/>
+		<appender-ref ref="warnFile"/>
+		<appender-ref ref="errorFile"/>
+		<appender-ref ref="debugFile"/>
+	</root>
+</configuration>
